@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wanderlight — A Field Journal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1c1a17;
+    --paper:#f4f0e8;
+    --amber:#d98a3d;
+    --teal:#3f6664;
+    --line: rgba(28,26,23,0.14);
+    --shadow: 0 18px 40px rgba(28,26,23,0.22);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+
+  body{
+    background:var(--ink);
+    color:var(--paper);
+    font-family:'Inter', sans-serif;
+    min-height:100vh;
+    padding: 56px 6vw 90px;
+  }
+
+  header{
+    max-width:920px;
+    margin: 0 auto 48px;
+  }
+
+  .eyebrow{
+    font-size:12px;
+    letter-spacing:0.22em;
+    text-transform:uppercase;
+    color:var(--amber);
+    font-weight:600;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:26px;
+    height:1px;
+    background:var(--amber);
+    display:inline-block;
+  }
+
+  h1{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size: clamp(2.2rem, 5vw, 3.4rem);
+    margin: 14px 0 10px;
+    line-height:1.05;
+  }
+
+  header p{
+    font-size:15px;
+    color: rgba(244,240,232,0.62);
+    max-width:520px;
+    line-height:1.6;
+    margin:0;
+  }
+
+  /* filter pills */
+  .filters{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    max-width:920px;
+    margin: 34px auto 0;
+  }
+  .pill{
+    font-family:'Inter', sans-serif;
+    font-size:13px;
+    font-weight:500;
+    letter-spacing:0.02em;
+    color: rgba(244,240,232,0.75);
+    background: transparent;
+    border:1px solid var(--line);
+    border-radius:100px;
+    padding:8px 18px;
+    cursor:pointer;
+    transition: all .25s ease;
+  }
+  .pill:hover{
+    border-color: var(--amber);
+    color:var(--paper);
+  }
+  .pill.active{
+    background:var(--amber);
+    border-color:var(--amber);
+    color:var(--ink);
+    font-weight:600;
+  }
+
+  /* gallery grid */
+  .gallery{
+    max-width:1180px;
+    margin: 40px auto 0;
+    display:grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-auto-rows: 260px;
+    gap:18px;
+    grid-auto-flow: dense;
+  }
+  .frame{
+    position:relative;
+    overflow:hidden;
+    border-radius:4px;
+    cursor:pointer;
+    background:#0f0e0c;
+    opacity:0;
+    transform: translateY(14px);
+    animation: rise .5s ease forwards;
+  }
+  @keyframes rise{ to{ opacity:1; transform:none; } }
+
+  .frame.tall{ grid-row: span 2; }
+  .frame.wide{ grid-column: span 2; }
+
+  .frame img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+    transition: transform .6s cubic-bezier(.2,.8,.2,1), filter .6s ease;
+  }
+  .frame:hover img{
+    transform: scale(1.07);
+    filter: saturate(1.15);
+  }
+
+  .frame .tag{
+    position:absolute;
+    top:12px;
+    left:12px;
+    font-size:10px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    background: rgba(28,26,23,0.55);
+    backdrop-filter: blur(6px);
+    color:var(--paper);
+    padding:5px 10px;
+    border-radius:100px;
+    border:1px solid rgba(244,240,232,0.2);
+  }
+
+  .frame .caption{
+    position:absolute;
+    left:0; right:0; bottom:0;
+    padding: 34px 14px 14px;
+    background: linear-gradient(to top, rgba(15,14,12,0.92), transparent);
+    transform: translateY(14px);
+    opacity:0;
+    transition: all .35s ease;
+  }
+  .frame:hover .caption{ transform:none; opacity:1; }
+  .caption .title{ font-family:'Fraunces', serif; font-size:16px; font-weight:600; }
+  .caption .place{ font-size:11px; color: rgba(244,240,232,0.65); margin-top:2px; }
+
+  .frame.hidden{ display:none; }
+
+  /* lightbox */
+  .lightbox{
+    position:fixed; inset:0;
+    background: rgba(10,9,8,0.94);
+    display:flex; align-items:center; justify-content:center;
+    padding: 0 70px;
+    z-index:100;
+    opacity:0; pointer-events:none;
+    transition: opacity .3s ease;
+  }
+  .lightbox.open{ opacity:1; pointer-events:auto; }
+
+  .lb-stage{
+    max-width: min(84vw, 980px);
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+  }
+  .lb-stage img{
+    max-width: 100%;
+    max-height:68vh;
+    display:block;
+    border-radius:3px;
+    box-shadow: var(--shadow);
+    animation: pop .3s ease;
+  }
+  @keyframes pop{ from{ opacity:0; transform:scale(.97);} to{opacity:1; transform:none;} }
+
+  .lb-info{
+    width:100%;
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:12px;
+    margin-top:16px;
+  }
+  .lb-meta{ display:flex; align-items:baseline; gap:10px; min-width:0; }
+  .lb-meta .title{ font-family:'Fraunces', serif; font-size:18px; white-space:nowrap; }
+  .lb-meta .place{ font-size:12px; color: rgba(244,240,232,0.55); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+  .lb-counter{
+    font-size:12px;
+    letter-spacing:0.1em;
+    color: rgba(244,240,232,0.5);
+    font-variant-numeric: tabular-nums;
+    white-space:nowrap;
+    flex-shrink:0;
+  }
+
+  .lb-close, .lb-nav{
+    position:absolute;
+    background: rgba(15,14,12,0.4);
+    border:1px solid rgba(244,240,232,0.25);
+    color:var(--paper);
+    border-radius:50%;
+    width:44px; height:44px;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    font-size:18px;
+    transition: all .2s ease;
+  }
+  .lb-close:hover, .lb-nav:hover{ border-color:var(--amber); color:var(--amber); }
+
+  .lb-close{ top:20px; right:20px; }
+  .lb-nav.prev{ left:16px; top:34vh; transform:translateY(-50%); }
+  .lb-nav.next{ right:16px; top:34vh; transform:translateY(-50%); }
+
+  .lb-filmstrip{
+    position:fixed;
+    bottom:22px; left:50%;
+    transform:translateX(-50%);
+    display:flex; gap:8px;
+    z-index:101;
+  }
+  .lb-filmstrip span{
+    width:6px; height:6px;
+    border-radius:50%;
+    background: rgba(244,240,232,0.3);
+    transition: all .25s ease;
+  }
+  .lb-filmstrip span.active{
+    background:var(--amber);
+    width:18px;
+    border-radius:4px;
+  }
+
+  @media (max-width: 1024px){
+    .gallery{ grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 720px){
+    .gallery{ grid-template-columns: repeat(2, 1fr); grid-auto-rows: 200px; gap:14px; }
+    .frame.wide{ grid-column: span 2; }
+    header{ margin-bottom:32px; }
+    .lightbox{ padding: 0 16px; }
+    .lb-nav{ width:38px; height:38px; font-size:16px; }
+    .lb-close{ width:38px; height:38px; font-size:16px; top:14px; right:14px; }
+  }
+  @media (max-width: 480px){
+    body{ padding: 36px 5vw 70px; }
+    .gallery{ grid-template-columns: 1fr; grid-auto-rows: 240px; gap:12px; }
+    .frame.tall, .frame.wide{ grid-column: span 1; grid-row: span 1; }
+    .filters{ gap:8px; }
+    .pill{ padding:7px 14px; font-size:12px; }
+    .lb-stage{ max-width:100%; }
+    .lb-stage img{ max-height:56vh; }
+    .lb-info{ flex-direction:column; align-items:flex-start; gap:4px; }
+    .lb-nav.prev{ left:6px; }
+    .lb-nav.next{ right:6px; }
+    .lb-filmstrip{ bottom:12px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Field Journal · Vol. 04</div>
+  <h1>Wanderlight</h1>
+  <p>A running record of places passed through — logged by light, not by itinerary. Filter by category or step through the full roll.</p>
+</header>
+
+<div class="filters" id="filters"></div>
+
+<div class="gallery" id="gallery"></div>
+
+<div class="lightbox" id="lightbox">
+  <button class="lb-nav prev" id="lbPrev" aria-label="Previous">&#8249;</button>
+  <div class="lb-stage">
+    <img id="lbImage" src="" alt="">
+    <div class="lb-info">
+      <div class="lb-meta">
+        <span class="title" id="lbTitle"></span>
+        <span class="place" id="lbPlace"></span>
+      </div>
+      <div class="lb-counter" id="lbCounter"></div>
+    </div>
+  </div>
+  <button class="lb-nav next" id="lbNext" aria-label="Next">&#8250;</button>
+  <button class="lb-close" id="lbClose" aria-label="Close">&times;</button>
+</div>
+
+<div class="lb-filmstrip" id="filmstrip"></div>
+
+<script>
+  const photos = [
+    { id: 1015, title: "River Bend", place: "Sognefjord, Norway", category: "Nature", size: "tall", keywords: "fjord,river,norway" },
+    { id: 1016, title: "Ridge Line", place: "Dolomites, Italy", category: "Nature", size: "", keywords: "mountain,dolomites,ridge" },
+    { id: 1024, title: "Terracotta Path", place: "Marrakesh, Morocco", category: "Urban", size: "wide", keywords: "marrakesh,morocco,alley" },
+    { id: 1031, title: "Glass & Steel", place: "Singapore", category: "Urban", size: "", keywords: "singapore,skyline,skyscraper" },
+    { id: 1040, title: "Salt Flats", place: "Uyuni, Bolivia", category: "Nature", size: "", keywords: "saltflat,bolivia,desert" },
+    { id: 1043, title: "Night Market", place: "Chiang Mai, Thailand", category: "People", size: "tall", keywords: "nightmarket,thailand,street" },
+    { id: 1050, title: "Harbor Light", place: "Lisbon, Portugal", category: "Urban", size: "", keywords: "lisbon,harbor,portugal" },
+    { id: 1057, title: "Fisherman's Rest", place: "Kerala, India", category: "People", size: "wide", keywords: "fisherman,kerala,india" },
+    { id: 1060, title: "Alpine Fog", place: "Interlaken, Switzerland", category: "Nature", size: "", keywords: "alps,fog,switzerland" },
+    { id: 1069, title: "Old Quarter", place: "Hanoi, Vietnam", category: "Urban", size: "", keywords: "hanoi,vietnam,oldtown" },
+    { id: 1074, title: "Highland Walk", place: "Isle of Skye, Scotland", category: "People", size: "", keywords: "scotland,highland,hiker" },
+    { id: 1084, title: "Desert Bloom", place: "Wadi Rum, Jordan", category: "Nature", size: "tall", keywords: "desert,jordan,dunes" },
+    { id: 106, title: "Coastal Cliffs", place: "Amalfi Coast, Italy", category: "Nature", size: "", keywords: "amalfi,cliffs,coast" },
+    { id: 164, title: "Rooftop Rows", place: "Porto, Portugal", category: "Urban", size: "wide", keywords: "porto,rooftops,portugal" },
+    { id: 177, title: "Market Stall", place: "Jaipur, India", category: "People", size: "", keywords: "jaipur,market,india" },
+    { id: 219, title: "Pine Trail", place: "Banff, Canada", category: "Nature", size: "", keywords: "banff,pines,canada" },
+  ];
+
+  const categories = ["All", ...new Set(photos.map(p => p.category))];
+  const filtersEl = document.getElementById('filters');
+  const galleryEl = document.getElementById('gallery');
+  const filmstripEl = document.getElementById('filmstrip');
+
+  let activeCategory = "All";
+  let currentIndex = 0;
+
+  function imgUrl(photo, w, h){
+    // Keyword-matched source so the photo actually reflects the caption,
+    // and lock=id keeps the same photo across thumbnail + lightbox views.
+    return `https://loremflickr.com/${w}/${h}/${encodeURIComponent(photo.keywords)}?lock=${photo.id}`;
+  }
+
+  // Grid cells are a fixed size (see --grid-auto-rows), so every thumbnail
+  // is requested at the same square-ish ratio and object-fit: cover
+  // handles the crop — no more per-tile-type aspect guessing.
+  const THUMB_W = 600, THUMB_H = 600;
+
+  function visiblePhotos(){
+    return activeCategory === "All" ? photos : photos.filter(p => p.category === activeCategory);
+  }
+
+  function renderFilters(){
+    filtersEl.innerHTML = "";
+    categories.forEach(cat => {
+      const btn = document.createElement('button');
+      btn.className = 'pill' + (cat === activeCategory ? ' active' : '');
+      btn.textContent = cat;
+      btn.addEventListener('click', () => {
+        activeCategory = cat;
+        renderFilters();
+        renderGallery();
+      });
+      filtersEl.appendChild(btn);
+    });
+  }
+
+  function renderGallery(){
+    galleryEl.innerHTML = "";
+    const list = visiblePhotos();
+    list.forEach((p, i) => {
+      const frame = document.createElement('div');
+      frame.className = 'frame ' + (p.size || '');
+      frame.style.animationDelay = (i * 0.05) + 's';
+      frame.innerHTML = `
+        <img src="${imgUrl(p, THUMB_W, THUMB_H)}" alt="${p.title}" loading="lazy" decoding="async">
+        <span class="tag">${p.category}</span>
+        <div class="caption">
+          <div class="title">${p.title}</div>
+          <div class="place">${p.place}</div>
+        </div>
+      `;
+      frame.addEventListener('click', () => openLightbox(i));
+      galleryEl.appendChild(frame);
+    });
+  }
+
+  // Lightbox
+  const lightbox = document.getElementById('lightbox');
+  const lbImage = document.getElementById('lbImage');
+  const lbTitle = document.getElementById('lbTitle');
+  const lbPlace = document.getElementById('lbPlace');
+  const lbCounter = document.getElementById('lbCounter');
+
+  function openLightbox(index){
+    currentIndex = index;
+    updateLightbox();
+    lightbox.classList.add('open');
+    filmstripEl.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox(){
+    lightbox.classList.remove('open');
+    filmstripEl.style.display = 'none';
+    document.body.style.overflow = '';
+  }
+
+  function updateLightbox(){
+    const list = visiblePhotos();
+    const p = list[currentIndex];
+    lbImage.src = imgUrl(p, 1200, 800);
+    lbImage.alt = p.title;
+    lbTitle.textContent = p.title;
+    lbPlace.textContent = p.place;
+    lbCounter.textContent = String(currentIndex + 1).padStart(2,'0') + " / " + String(list.length).padStart(2,'0');
+
+    filmstripEl.innerHTML = "";
+    list.forEach((_, i) => {
+      const dot = document.createElement('span');
+      if (i === currentIndex) dot.className = 'active';
+      filmstripEl.appendChild(dot);
+    });
+  }
+
+  function step(delta){
+    const list = visiblePhotos();
+    currentIndex = (currentIndex + delta + list.length) % list.length;
+    updateLightbox();
+  }
+
+  document.getElementById('lbClose').addEventListener('click', closeLightbox);
+  document.getElementById('lbPrev').addEventListener('click', () => step(-1));
+  document.getElementById('lbNext').addEventListener('click', () => step(1));
+  lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
+
+  document.addEventListener('keydown', (e) => {
+    if (!lightbox.classList.contains('open')) return;
+    if (e.key === 'Escape') closeLightbox();
+    if (e.key === 'ArrowLeft') step(-1);
+    if (e.key === 'ArrowRight') step(1);
+  });
+
+  renderFilters();
+  renderGallery();
+</script>
+
+</body>
+</html>
